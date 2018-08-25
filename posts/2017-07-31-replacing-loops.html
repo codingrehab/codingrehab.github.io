@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>immutability-and-loops</title>
+    <link rel="stylesheet" href="../css/default.css" />
+    <link rel="stylesheet" href="../css/code_highlight.css" />
+    <link rel="stylesheet" href="../css/custom.css" />
+    <link rel="stylesheet" ref="https://fonts.googleapis.com/css?family=Anonymous+Pro">
+    <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+    <script src="https://use.fontawesome.com/cdd971d72d.js"></script>
+    <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-105172721-1', 'auto');
+     ga('send', 'pageview');
+
+    </script> 
+  </head>
+  <body>
+    <header>
+      <div class="inner">
+        <div class="logo">
+          <a href="../"><img src="../images/coding-rehab-logo.png" alt="Coding Rehab" /></a>
+        </div>
+        <div class="navigation">
+          <a href="../">Home</a>
+          <a href="../about.html">About</a>
+          <a href="../archive.html">Archive</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="inner">
+        <div class="info">
+    Posted on July 31, 2017
+    
+    by <a href="../about">Amir Barylko</a>
+    
+</div>
+
+<h2 id="immutability-and-loops">Immutability and loops</h2>
+<p>Working with immutable data structures can be a challenge when transitioning from languages like <code>Java</code>, <code>Javascript</code> or <code>C#</code> (where <em>having a state</em> or <em>modifying the state</em> is a common practice and idiomatic to the language) to languages like <code>Clojure</code>, <code>Haskell</code>, <code>F#</code>, <code>Elixir</code>, etc.</p>
+<p>But what does it mean to be <em>immutable</em>? It means the all the code you write or use can not modify an instance of an object or data structure, rather it will create a new object that reflects the change you expected.</p>
+<p>For example in <code>Clojure</code> to add a new element to a collection you could use <code>conj</code></p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(conj [1 2 3 4] 5)
+
+</code></pre>
+<p>The <code>conj</code> operation does not modify the collection but returns a copy of it instead</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(let [original [1 2 3 4] copy (conj original 5)]
+  (str "The original " original " -- The copy " copy))
+
+</code></pre>
+<p>Collections in languages that enforce immutability are optimized for these kind of operations so they are very efficient and there is no penalty for immutability.</p>
+<h2 id="friendly-recursion">Friendly recursion</h2>
+<p>Immutability forces us to rethink how to write loops. Iterating over a collection or creating collections in a loop has to be relearned.</p>
+<p>Lets consider transforming the elements of a collection one at a time by applying a function to each element and returning a new collection with the results.</p>
+<p>Though we will not use a classic <code>while</code> loop, we can do something very similar by using <em>recursion</em>.</p>
+<p>Here we see an example of <em>incrementing</em> the elements of a collection one at a time:</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(loop [[x & xs] [1 2 3 4] result []]
+  (if (nil? x)
+    result
+    (recur xs (conj result (inc x)))))
+</code></pre>
+<p>Actually this operation is so common that there is a <code>for</code> function that does most of the work for us. This is usually called <em>list comprehension</em> in many languages.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(for [x [1 2 3 4]] (inc x))
+
+</code></pre>
+<p>Filtering elements given a predicate is also straightforward. Here is an example filtering even elements:</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(for [x [1 2 3 4] :when (even? x)] x)
+
+</code></pre>
+<p>Here is another example for list comprehension taking the first ten elements:</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(for [x (range 1 20) :while (< x 11)] x)
+
+</code></pre>
+<h2 id="avoid-custom-loops">Avoid custom loops</h2>
+<p>List comprehension help us to avoid repeating common operations.</p>
+<p>Many of these concepts are indeed so common that specific functions are included in each language, to achieve the same functionality.</p>
+<p>Transforming elements using a function is called <em>mapping</em>. Thus the function is called <code>map</code>.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(map inc (range 1 20))
+
+</code></pre>
+<p>This idiom is so popular that many languages implement it. It is very similar in <code>Haskell</code> and <code>F#</code></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Haskell</span>
+map (<span class="fu">+</span> <span class="dv">1</span>) [<span class="dv">1</span><span class="fu">..</span><span class="dv">20</span>]</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode fsharp"><code class="sourceCode fsharp">//<span class="co"> F#</span>
+List<span class="kw">.</span>map ((+) <span class="dv">1</span>) [<span class="dv">1</span>; <span class="dv">2</span>; <span class="dv">3</span>; <span class="dv">4</span>]</code></pre></div>
+<p>and even you can find it in <code>Java</code> and <code>C#</code> (though is called <code>Select</code>)</p>
+<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="co">// Java Part of `Stream` API</span>
+<span class="bu">Arrays</span>.<span class="fu">asList</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span>).<span class="fu">stream</span>().<span class="fu">map</span>(i -&gt; i + <span class="dv">1</span>);</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode c#"><code class="sourceCode cs"><span class="co">// C# Using LINQ extension methods</span>
+<span class="kw">new</span> List&lt;<span class="dt">int</span>&gt;() { <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>, <span class="dv">5</span> }.<span class="fu">Select</span>(i =&gt; i + <span class="dv">1</span>);</code></pre></div>
+<h3 id="why-bother">Why bother?</h3>
+<p>You may we wondering</p>
+<blockquote>
+<p>Why use other functions instead of just <em>list comprehensions</em> or even a custom <em>loop</em>?</p>
+</blockquote>
+<p>Because functions like <code>map</code> have well defined clear meaning.</p>
+<p><em>Custom loops</em> force the reader to invest effort into looking at the code, writing tests, etc to understand what was the intention behind the loop.</p>
+<p>On the other hand, when using well known functions we are applying clearly defined building blocks that we do not need to explain nor document. All that effort comes as a boon and makes our code more idiomatic.</p>
+<h2 id="combining-blocks">Combining blocks</h2>
+<p>Using common building blocks make code more expressive and much easier to understand.</p>
+<p>The more familiar we are with these blocks the easier is for us to combine them to satisfy our needs.</p>
+<p>Here is an example of finding the first <em>even</em> element in a collection:</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(first (filter even? [5 3 19 21 6 18 3 4]))
+</code></pre>
+<p>More idiomatic to <code>Clojure</code> here is the same code using the <a href="https://clojuredocs.org/clojure.core/-%3E%3E">thread last macro</a>.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(->> [5 3 19 21 6 18 3 4]
+     (filter even?)
+     first)
+</code></pre>
+<p>Here is another example taking all the numbers that are <em>greater than zero</em>, <em>incrementing</em> them by one and filtering the <em>even</em> ones.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(->> [5 3 18 21 -1 18 3 4]
+     (take-while #(> % 0))
+     (map inc)
+     (filter even?))
+</code></pre>
+<p>Though there is a combination of functions, each element is only traversed once and on demand — due to the lazy nature of sequences in <code>Clojure</code>.</p>
+<h2 id="food-for-thought">Food for thought</h2>
+<p>I can not emphasize enough how important is to learn — as much as we can — which common concepts are already implemented and how to use those functions in our code.</p>
+<p>Here is a small list as a starting point.</p>
+<h3 id="concatenation-and-mapping">Concatenation and mapping</h3>
+<p>We already talked about two of the most used functions <code>filter</code> and <code>map</code>. Mapping to a collection and then concatenate the result is a very common scenario. So common, that there is a function that composes both.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(mapcat reverse [[3 2 1 0] [6 5 4] [9 8 7]])
+</code></pre>
+<h3 id="take-and-drop">Take and drop</h3>
+<p>Another common scenario is taking (and dropping) elements.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(take 10 (range))
+</code></pre>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(take-while #(< % 10) (range))
+</code></pre>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(drop 10 (range 1 20))
+</code></pre>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(drop-while #(< % 10) (range 1 20))
+</code></pre>
+<h3 id="zipping-collections">Zipping collections</h3>
+<p>So far we looked at working with one element at a time. Here is a very useful function to combine elements of two or more collections.</p>
+<p>In <code>Haskell</code> the function is called <code>zip</code>, which takes two collections and returns a single collection of tuples. Each tuple containing one element of each collection.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">zip [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>] [<span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>] <span class="co">-- Returns [(1, 4), (2, 5), (3, 6)]</span>
+
+zipWith (<span class="fu">+</span>) [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>] [<span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>] <span class="co">-- Returns [5, 7, 9]</span>
+
+unzip [(<span class="dv">1</span>, <span class="dv">4</span>), (<span class="dv">2</span>, <span class="dv">5</span>), (<span class="dv">3</span>, <span class="dv">6</span>)] <span class="co">-- Returns ([1,2,3],[4,5,6])</span>
+
+<span class="co">-- For more than two collections there is zip3, zip4 etc...</span>
+
+zip3 [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>] [<span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>] [<span class="dv">7</span>, <span class="dv">8</span>, <span class="dv">9</span>] <span class="co">-- return triplets [(1, 4, 7), ....]</span></code></pre></div>
+<p>Luckily for us (being a dynamic language) in <code>Clojure</code> to implement the same functionality we use the same <code>map</code> function that we saw in the first example.</p>
+<p>The <code>map</code> function expects another function whose arity matches the collections passed as parameter. For two collections it should be a function that receives two parameters; Three collections a function that receives three parameters, and so on.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(map vector [1 2 3] [4 5 6] [7 8 9])
+</code></pre>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(map + [1 2 3] [4 5 6])
+</code></pre>
+<h3 id="reducing-folding">Reducing (folding)</h3>
+<p>Reducing a collection means, to transform all the elements into a value. This transformation does not happen one element at a time, but in conjunction with an accumulator — which can help us decide what to do.</p>
+<p>The <code>reduce</code> function expects a function with two parameters (the accumulator and the current element), then an initial value and finally the collection from which to take the elements.</p>
+<p>For example suming all the elements of the collection</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(reduce + 0 [1 2 3 4 5 6])
+</code></pre>
+<p>Here is another example converting a collection into a <em>hashmap</em></p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(reduce (fn [h [k v]] (assoc h k v)) {} [[:a 1] [:b 2] [:c 3]])
+</code></pre>
+<p>The intermediate steps can be obtained using <code>reductions</code></p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(reductions (fn [h [k v]] (assoc h k v)) {} [[:a 1] [:b 2] [:c 3]])
+</code></pre>
+<p><code>group-by</code> is an especial reduction that returns a <code>hashmap</code> using the function to determine the key of each element.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(group-by even? (range 1 20))
+</code></pre>
+<p><code>frequencies</code> is a reduction that checks the frequency of each element, and returns a <code>hashmap</code>. The hashmap contains the element as key and the count as a value.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(frequencies [2 2 1 4 4 1 4 2 3])
+</code></pre>
+<h3 id="extra-icing">Extra icing</h3>
+<p>Here are two more functions that can be useful to have in your toolbox.</p>
+<p><code>partition</code> takes a number, a collection and returns a new collection, partitioned by the given amount of elements.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(partition 2 (range 20))
+</code></pre>
+<p>And last but not least, here is a very useful function that mimics a scenarios where the same function is applied again and again over the result of the previous call.</p>
+<p>And the sequence returned is <code>x, (f x), (f (f x)), (f (f (f x)))</code> and so on.</p>
+<p>Because this produces an infinite sequence, we are explicitly taking the first twenty memebers of the sequence.</p>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(take 20 (iterate inc 0))
+</code></pre>
+<pre class="klipse"><code class="eval-clojure" data-loop-msec="2000">
+(def powers-of-two (iterate (partial * 2) 1))
+
+(take 10 powers-of-two)
+</code></pre>
+<h2 id="summary">Summary</h2>
+<p>Writing custom loops is a lot of effort, and more often than not, there is an alternative already written to help you out. Functions often need to be combined with other functions and frequently require small helper functions.</p>
+<p>Though list comprehensions, and many of the functions we just reviewed are very common in functional languages, they also exists in many others language.</p>
+<p>Do not get discouraged, search for them, you may be surprised of what you will find.</p>
+
+      </div>
+    </div>
+
+    <footer>
+      <div class="inner">
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+      </div>
+    </footer>
+    <script>
+      window.klipse_settings = {
+        // selector_eval_js: '.language-klipse', // css selector for the html elements you want to klipsify
+        selector: '.eval-clojure'
+      };
+    </script> 
+    <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+  </body>
+</html>

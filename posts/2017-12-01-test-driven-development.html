@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>test-driven-development</title>
+    <link rel="stylesheet" href="../css/default.css" />
+    <link rel="stylesheet" href="../css/code_highlight.css" />
+    <link rel="stylesheet" href="../css/custom.css" />
+    <link rel="stylesheet" ref="https://fonts.googleapis.com/css?family=Anonymous+Pro">
+    <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+    <script src="https://use.fontawesome.com/cdd971d72d.js"></script>
+    <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-105172721-1', 'auto');
+     ga('send', 'pageview');
+
+    </script> 
+  </head>
+  <body>
+    <header>
+      <div class="inner">
+        <div class="logo">
+          <a href="../"><img src="../images/coding-rehab-logo.png" alt="Coding Rehab" /></a>
+        </div>
+        <div class="navigation">
+          <a href="../">Home</a>
+          <a href="../about.html">About</a>
+          <a href="../archive.html">Archive</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="inner">
+        <div class="info">
+    Posted on December  1, 2017
+    
+    by <a href="../about">David Taylor</a>
+    
+</div>
+
+<h2 id="is-test-driven-development-still-worth-it">Is Test Driven Development still worth it?</h2>
+<p>Yes: But you need to be smart about it. There is no doubt the software development world views testing as important. I’m happy to say that in my circles many value the skills needed to write quality tests. We are starting to regard features and enhancements to tests, as valuable as production code.</p>
+<p>Tests are code. Writing more tests will also raise the likelihood of adding bugs, confusion, and mistakes into your code base — just like adding more production code. You should approach the introduction of test code with the same reverence as production code. You should look for opportunities to refactor, simplify, optimize and improve your tests when possible. Further, you should think often about what value a test brings to your code base. There are times when a test isn’t worth the time, risk or upkeep — despite it validating some part of your code.</p>
+<p>Alternatively, there are other ways to develop code that many programmers find beneficial. For example, many developers use a REPL to quickly build functionality. This quick feedback loop enables a developer to write solutions faster than those starting with test can. However, much of the benefit from automated testing comes long after the tests have passed and the feature is released into production. These tests continue to give a team value as they act as validation against regression issue — something the REPL will not help you with.</p>
+<p>Test Driven development is really valuable, however, moving away from unit testing and toward property testing will raise your ability to write concise — yet focused — tests.</p>
+<p>Thinking in terms of properties allows you to capture the domain of a scenario in a simple and descriptive way - improving the value of test-driven development.</p>
+<p>Looking at advent of code 2015 day 1 we can see that choosing a property of the program and then testing the outcome of that code — given that property — has enabled the testing of a broader spectrum of functionality with minimal code. Neat!</p>
+<h2 id="the-code">The Code</h2>
+<p>For example:</p>
+<p><a href="http://adventofcode.com/2015/day/1">Day 1</a> requires the evaluation of open parentheses with a given input.</p>
+<p>How we think about tests influences the code that we will write.</p>
+<p>If I think about the problem in units, I may write a test to give me the result of a smaller function, thus directing me towards writing functions that work well with unit tests. However, a unit focused approach could lead to unnecessary testing with little to no benefits — that may not do a great job describing the program’s utility.</p>
+<p>To demonstrate let’s use Clojure’s <code>test.check</code> and create a property test.</p>
+<p>Keep the following words of wisdom in mind:</p>
+<ol style="list-style-type: decimal">
+<li><p><a href="http://hypothesis.works/articles/what-is-property-based-testing/">“property based testing requires you to reason about how your program should behave”</a></p></li>
+<li><p><a href="https://jonathangraham.github.io/2016/01/07/property_based_testing_clojure_functions">“Rather than asserting that specific inputs to your code should result in a specific output, as with unit tests, property-based tests make statements about the expected behaviour of the code that should hold true for the entire domain of possible inputs. These statements are then verified for many different (pseudo)randomly generated inputs.”</a></p></li>
+</ol>
+<p>First let’s reason about how our program should behave. Our problem requires that given a sequence of parenthesis — which represent floors - that we determine the level we end up at.</p>
+<p>In this case our domain is a set of parenthesis. Let’s create a generator that will give us parethesis.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="kw">require</span> '[clojure.<span class="kw">test</span>.check.generators <span class="at">:as</span> gen]) 
+(<span class="kw">require</span> '[clojure.<span class="kw">test</span>.check <span class="at">:as</span> tc])
+(<span class="kw">require</span> '[clojure.<span class="kw">test</span>.check.properties <span class="at">:as</span> prop])
+
+(gen/sample (gen/elements <span class="st">&quot;()&quot;</span>))
+<span class="co">;; (\( \( \( \) \) \) \) \( \) \))</span></code></pre></div>
+<p>Great! Now we’re able to write a test that describes the high-level specification of behavior for a range of data points. In this case, we need to implement logic which should “hold true for the entire docmain of possible inputs.”</p>
+<p>Below you’ll notice that I have written a test that generates input — a random sequence of parenthesis — and then calculates the count I’d expect after running my funtion <code>floor</code>.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure"><span class="co">;; The code I'm testing</span>
+(<span class="bu">def</span><span class="fu"> is-open </span>[c] (<span class="kw">if</span> (<span class="kw">=</span> c <span class="ch">\(</span> ) <span class="dv">1</span> -<span class="dv">1</span>)))
+
+(floor [s] (<span class="kw">reduce</span> (<span class="kw">fn</span> [acc v] (<span class="kw">+</span> (is-open v) acc )) <span class="dv">0</span> s))
+
+<span class="co">;; The property test</span>
+(<span class="bu">def</span><span class="fu"> test-with-generators</span>·
+  (<span class="kw">testing</span> <span class="st">&quot;generators&quot;</span>
+   (prop/for-all [input (gen/vector (gen/elements <span class="st">&quot;()&quot;</span>))]
+     (<span class="kw">let</span> [floor-commands (<span class="kw">apply</span> <span class="kw">str</span> input)
+           command-count (<span class="kw">count</span> floor-commands)
+           floor-ups (<span class="kw">count</span> (<span class="kw">filter</span> #(<span class="kw">=</span> % <span class="ch">\(</span>) floor-commands))
+           expected (<span class="kw">-</span> floor-ups (<span class="kw">-</span> command-count floor-ups))]
+            (<span class="kw">is</span> (<span class="kw">=</span>  expected (floor strs)))))))]))))
+
+(tc/quick-check <span class="dv">100</span> test-with-generators)</code></pre></div>
+<p>Given that the property test will run 100 times each with a different set of inputs — these tests are more concise, easier to maintain, and paint a better picture of what the program does than a unit test covering the same domain.</p>
+<p>Test Driven Development is still worth it. You should use tests to drive the design of your programs. However, property testing will guide a developer towards squeezing the most value out of concise and clean tests.</p>
+
+      </div>
+    </div>
+
+    <footer>
+      <div class="inner">
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+      </div>
+    </footer>
+    <script>
+      window.klipse_settings = {
+        // selector_eval_js: '.language-klipse', // css selector for the html elements you want to klipsify
+        selector: '.eval-clojure'
+      };
+    </script> 
+    <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+  </body>
+</html>

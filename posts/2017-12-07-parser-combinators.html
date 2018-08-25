@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>parsing-combinators</title>
+    <link rel="stylesheet" href="../css/default.css" />
+    <link rel="stylesheet" href="../css/code_highlight.css" />
+    <link rel="stylesheet" href="../css/custom.css" />
+    <link rel="stylesheet" ref="https://fonts.googleapis.com/css?family=Anonymous+Pro">
+    <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+    <script src="https://use.fontawesome.com/cdd971d72d.js"></script>
+    <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-105172721-1', 'auto');
+     ga('send', 'pageview');
+
+    </script> 
+  </head>
+  <body>
+    <header>
+      <div class="inner">
+        <div class="logo">
+          <a href="../"><img src="../images/coding-rehab-logo.png" alt="Coding Rehab" /></a>
+        </div>
+        <div class="navigation">
+          <a href="../">Home</a>
+          <a href="../about.html">About</a>
+          <a href="../archive.html">Archive</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="inner">
+        <div class="info">
+    Posted on December  7, 2017
+    
+    by <a href="../about">Amir Barylko</a>
+    
+</div>
+
+<h2 id="parser-combinators">Parser Combinators</h2>
+<p>Parsing is applying a function with the type <code>String -&gt; Parser -&gt; a</code> where <code>a</code> is the result that you expect.</p>
+<p>Some parsers will return one character, or a word while others could return a complete <em>AST</em> (abstract syntax tree).</p>
+<h3 id="what-is-a-combinator">What is a combinator?</h3>
+<p>Combinators are functions that take two or more elements of a type and return a new element of the same type.</p>
+<p>For example we are very familiar with the <code>+</code> combinator for numbers or <code>concat</code> for lists.</p>
+<p>Following the same reasoning a <em>parser combinator</em> is going to be a <em>function</em> that takes two or more parsers and rturns another parser.</p>
+<h3 id="why-parser-combinators">Why parser combinators?</h3>
+<p>Combining <em>small</em> building blocks to create <em>bigger</em> building blocks is an approach that we are acustomed to and use naturally.</p>
+<p>Parser combinators libraries provide functions that start small (parsing digits, letters, etc) and then combinators that help to model common scenarios like repetition, delimiters and using multiple parsers together.</p>
+<h2 id="a-parser-combinator-library">A Parser Combinator library</h2>
+<p><a href="https://github.com/blancas/kern">Kern</a> is a parser combinator library for Clojure inspired by <a href="https://hackage.haskell.org/package/parsec">Parsec</a>.</p>
+<p>The best way to learn about <em>Kern</em> is to start working with it. We are going to work on an example soon, but let us get our feet wet by reviewing some of the basic parsers and combinators.</p>
+<h3 id="running-parsers">Running parsers</h3>
+<p>To get the result of a parser, the following functions are available:</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure"><span class="co">;; Get the result of parsing</span>
+
+(value letter <span class="st">&quot;abc&quot;</span>) <span class="co">; \a</span>
+
+<span class="co">;; Run the parser and print the result</span>
+
+(run letter <span class="st">&quot;abc&quot;</span>) <span class="co">; nil</span>
+
+<span class="co">;; prints \a</span>
+<span class="co">;; returns nil</span>
+
+
+<span class="co">;; Parse and return a hash with information</span>
+
+(parse letter <span class="st">&quot;abc&quot;</span>)
+
+<span class="co">;; return a structure</span>
+#blancas.kern.core.PState
+{<span class="at">:empty</span> false
+ <span class="at">:error</span> nil
+ <span class="at">:input</span> (<span class="ch">\b</span> <span class="ch">\c</span>)
+ <span class="at">:ok</span> true
+ <span class="at">:pos</span> #blancas.kern.core.PPosition {<span class="at">:col</span> <span class="dv">2</span> <span class="at">:line</span> <span class="dv">1</span> <span class="at">:src</span> <span class="st">&quot;&quot;</span>}
+ <span class="at">:user</span> nil
+ <span class="at">:value</span> <span class="ch">\a</span>}</code></pre></div>
+<h3 id="primitive-parsers">Primitive parsers</h3>
+<p>Primitive parsers are the basic components of the library. All the other parsers are built on top.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure"><span class="co">;; Parsing a letter</span>
+(value letter <span class="st">&quot;abc&quot;</span>) <span class="co">; \a</span>
+
+<span class="co">;; Parse a digit</span>
+(value digit <span class="st">&quot;123&quot;</span>) <span class="co">; \1</span>
+
+<span class="co">;; Parse a specific word until a separator (space, tab, punctuaction, etc)</span>
+(value (word <span class="st">&quot;hello&quot;</span>) <span class="st">&quot;hello there&quot;</span>) <span class="co">; &quot;hello&quot;</span>
+
+<span class="co">;; Parse a number</span>
+(value dec-num <span class="st">&quot;12345&quot;</span>) <span class="co">; 12345</span>
+
+<span class="co">;; Parse space</span>
+(value space <span class="st">&quot; abcd&quot;</span>) <span class="co">; \space</span></code></pre></div>
+<h3 id="applying-multiple-parsers-combinators">Applying multiple parsers combinators</h3>
+<p>Is common to use more than one parser to parse complex inputs. Here are a series of combinators that helps us working with multiple parsers.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure"><span class="co">;; Try one parser and if it fails return the other</span>
+(value (<span class="kw">&lt;</span>|<span class="kw">&gt;</span> digit letter) <span class="st">&quot;1ab&quot;</span>) <span class="co">; \1</span>
+
+(value (<span class="kw">&lt;</span>|<span class="kw">&gt;</span> digit letter) <span class="st">&quot;a1b&quot;</span>) <span class="co">; \a</span>
+
+
+<span class="co">;; Return the value of every parser</span>
+
+(value (&lt;*&gt; (sym <span class="ch">\+</span>) digit dot digit) <span class="st">&quot;+1.2&quot;</span>) <span class="co">; [\+ \1 \. \2]</span>
+
+
+<span class="co">;; Return the value of the last parser</span>
+
+(value (&gt;&gt; (sym <span class="ch">\+</span>) digit dot digit) <span class="st">&quot;+1.2&quot;</span>) <span class="co">; \2</span>
+
+
+<span class="co">;; Return the value of the first parser</span>
+
+(value (&lt;&lt; (sym <span class="ch">\+</span>) digit dot digit) <span class="st">&quot;+1.2&quot;</span>) <span class="co">; \+</span>
+
+
+<span class="co">;; Parse and concatenate the result of each parsing</span>
+
+(value (&lt;+&gt; (optional (sym <span class="ch">\-</span>)) dec-num) <span class="st">&quot;-1234&quot;</span>) <span class="co">; &quot;-1234&quot;</span>
+
+
+<span class="co">;; Apply a function to the result of the parsing</span>
+
+(value (&lt;$&gt; <span class="kw">read-string</span> 
+            (&lt;+&gt; (optional (sym <span class="ch">\-</span>)) dec-num)) <span class="st">&quot;-1234&quot;</span>) <span class="co">; -1234</span></code></pre></div>
+<h3 id="repetition">Repetition</h3>
+<p>Repeating a parser is one of the basic ways of combining parsers.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure"><span class="co">;; Repeat zero or more times a parser</span>
+
+(value (many letter) <span class="st">&quot;xyz123&quot;</span>) <span class="co">; [\x \y \z]</span>
+
+(value (many letter) <span class="st">&quot;5xyz123&quot;</span>) <span class="co">; [] because zero occurences is fine</span>
+
+<span class="co">;; Repeat one or more times a parser</span>
+(value (many1 letter) <span class="st">&quot;xyz123&quot;</span>) <span class="co">; [\x \y \z]</span>
+
+(value (many1 letter) <span class="st">&quot;5xyz123&quot;</span>) <span class="co">; nil because expects at least one occurrence</span>
+
+
+<span class="co">;; Optionally run a parser</span>
+
+(value (&lt;+&gt; (optional (sym <span class="ch">\-</span>)) dec-num) <span class="st">&quot;-45&quot;</span>) <span class="co">; \-</span>
+
+
+<span class="co">;; Run a parser separated by other parser</span>
+
+(value (sep-by (sym <span class="ch">\&amp;</span>) (many1 letter)) <span class="st">&quot;a&amp;bb&amp;ccc&amp;ddd&quot;</span>) <span class="co">; [[\a] [\b \b] [\c \c \c] [\d \d \d]]</span></code></pre></div>
+<h2 id="example">Example</h2>
+<p>Now that we are all warmed up, let us put the parser combinators to work.</p>
+<p>We are going to use <a href="https://adventofcode.com/2017/day/7">day 7 of advent of code 2016</a> as an exmple of using a parser combinator to solve a problem.</p>
+<p>For <em>Day 7</em> we need to parse the input that has the form:</p>
+<pre>
+pbga (66)
+xhth (57)
+ebii (61)
+havc (66)
+ktlj (57)
+fwft (72) -> ktlj, cntj, xhth
+qoyq (66)
+padx (45) -> pbga, havc, qoyq
+tknk (41) -> ugml, padx, fwft
+jptl (61)
+ugml (68) -> gyxo, ebii, jptl
+gyxo (61)
+cntj (57)
+</pre>
+<p>Each line uses the concept of <em>program name</em> so I am going define a parser for it.</p>
+<p>A <em>program name</em> is a four letter word:</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(value (times <span class="dv">4</span> letter) <span class="st">&quot;gyxo&quot;</span>) <span class="co">; [\g \y \x \o]</span></code></pre></div>
+<p>Good start, but we need a string, or even better a <code>keyword</code>. Using the <code>&lt;$&gt;</code> function we can convert the result of parsing (a list of characters) into a keyword.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> prog-name-p </span>(&lt;$&gt; #(<span class="kw">-&gt;&gt;</span> % (<span class="kw">apply</span> <span class="kw">str</span>) <span class="kw">keyword</span>) (times <span class="dv">4</span> letter)))
+
+(value prog-name-p <span class="st">&quot;gyxo&quot;</span>) <span class="co">; :gyxo</span></code></pre></div>
+<p>After the program name comes the value in parenthesis. Luckily we have a handy function to parse between parenthesis.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(value (parens dec-num) <span class="st">&quot;(22)&quot;</span>) <span class="co">; 22</span></code></pre></div>
+<p>We need both values, the program name and the value in parenthesis:</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> prog-val-p </span>(&lt;*&gt; prog-name-p (skip-ws (parens dec-num))))
+
+(value prog-val-p <span class="st">&quot;abcd (67)&quot;</span>) <span class="co">; [:abcd 67]</span></code></pre></div>
+<p>First case done, now we need to parse a program that has “dependencies”.</p>
+<p>Something like <code>abcd (88) -&gt; ktlj, cntj, xhth</code>.</p>
+<p>As we did before, let us split the task. We do have a parser for a program with value, so let us focus on a parser for the dependencies.</p>
+<p>Here the dependencies are a list of comma separated <em>program name</em>. Once again, we can use one of the already defined parser combinators <code>sep-by</code>.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> dep-list-p </span>(sep-by comma prog-name-p))
+
+(value dep-list-p <span class="st">&quot;abcd, efgh, ijkl, mnop&quot;</span>) <span class="co">; [:abcd :efgh :ijkl :mnop]</span></code></pre></div>
+<p>To combine both we need a <code>-&gt;</code> in the middle. We could use the primitive parser <code>token</code> that does exactly that.</p>
+<p>Also, because we only care about the list and not the token, we can use the <code>&gt;&gt;</code> combinator to get the value of the last parser only.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> assign-p </span>(&gt;&gt; (skip-ws (token <span class="st">&quot;-&gt;&quot;</span>)) (skip-ws dep-list-p)))
+
+(value assign-p <span class="st">&quot; -&gt; aaaa, bbbb, cccc&quot;</span>) <span class="co">; [:aaaa :bbbb :cccc]</span></code></pre></div>
+<p>Almost ready! Now we need to combine two scenarios. One where we have only the program name and value and the other where also there are dependencies.</p>
+<p>To model that we could use the two parsers we already have, making the dependencies one <em>optional</em>.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> line-p </span>(&lt;*&gt; prog-val-p (optional assign-p)))
+
+(value line-p <span class="st">&quot;abcd (87)&quot;</span>) <span class="co">; [[:abcd 87] nil]</span>
+
+(value line-p <span class="st">&quot;abcd (87) -&gt; aaaa, bbbb, cccc&quot;</span>) <span class="co">; [[:abcd 87] [:aaaa :bbbb :cccc]]</span></code></pre></div>
+<p>Another way to define the combination of both parsers is to use <code>bind</code> in the form of <code>let</code> so each <em>name</em> is bound to the result of each parser.</p>
+<p>Instead of having the concatenations of two lists (and maybe <code>nil</code> as a second element) we could concatenate all the values together as part of the same list.</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> line-p</span>
+  (bind [prg prog-val-p
+         deps (optional assign-p)]
+         (return (<span class="kw">concat</span> prg (<span class="kw">or</span> deps [])))))
+
+(value line-p <span class="st">&quot;abcd (87)&quot;</span>) <span class="co">; (:abcd 87)</span>
+
+(value line-p <span class="st">&quot;abcd (87) -&gt; aaaa, bbbb, cccc&quot;</span>) <span class="co">; (:abcd 87 :aaaa :bbbb :cccc)</span></code></pre></div>
+<h2 id="is-it-worth-it">Is it worth it?</h2>
+<p>Here is a summary of the solution:</p>
+<div class="sourceCode"><pre class="sourceCode clojure"><code class="sourceCode clojure">(<span class="bu">def</span><span class="fu"> prog-name-p </span>(&lt;$&gt; #(<span class="kw">-&gt;&gt;</span> % (<span class="kw">apply</span> <span class="kw">str</span>) <span class="kw">keyword</span>) (times <span class="dv">4</span> letter)))
+
+(<span class="bu">def</span><span class="fu"> prog-val-p </span>(&lt;*&gt; prog-name-p (skip-ws (parens dec-num))))
+
+(<span class="bu">def</span><span class="fu"> dep-list-p </span>(sep-by comma prog-name-p))
+
+(<span class="bu">def</span><span class="fu"> assign-p </span>(&gt;&gt; (skip-ws (token <span class="st">&quot;-&gt;&quot;</span>)) (skip-ws dep-list-p)))
+
+(<span class="bu">def</span><span class="fu"> line-p</span>
+  (bind [prg prog-val-p
+         deps (optional assign-p)]
+         (return (<span class="kw">concat</span> prg (<span class="kw">or</span> deps [])))))</code></pre></div>
+<p>Clearly this is much more code than a regular expression but it has many benefits over a reg exp.</p>
+<p>The meaning for the <code>line-p</code> parser and the other parsers is much more clear, easy to test and easy to maintain if somebody else has to change the code later.</p>
+<p>Parser combinator libraries are a very useful tool and being familiar with the library can save you lots of coding and debugging time.</p>
+
+      </div>
+    </div>
+
+    <footer>
+      <div class="inner">
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+      </div>
+    </footer>
+    <script>
+      window.klipse_settings = {
+        // selector_eval_js: '.language-klipse', // css selector for the html elements you want to klipsify
+        selector: '.eval-clojure'
+      };
+    </script> 
+    <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+  </body>
+</html>

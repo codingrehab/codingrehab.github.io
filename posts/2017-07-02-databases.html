@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>databases</title>
+    <link rel="stylesheet" href="../css/default.css" />
+    <link rel="stylesheet" href="../css/code_highlight.css" />
+    <link rel="stylesheet" href="../css/custom.css" />
+    <link rel="stylesheet" ref="https://fonts.googleapis.com/css?family=Anonymous+Pro">
+    <link rel="stylesheet" type="text/css" href="https://storage.googleapis.com/app.klipse.tech/css/codemirror.css">
+    <script src="https://use.fontawesome.com/cdd971d72d.js"></script>
+    <script>
+     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+     })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+     ga('create', 'UA-105172721-1', 'auto');
+     ga('send', 'pageview');
+
+    </script> 
+  </head>
+  <body>
+    <header>
+      <div class="inner">
+        <div class="logo">
+          <a href="../"><img src="../images/coding-rehab-logo.png" alt="Coding Rehab" /></a>
+        </div>
+        <div class="navigation">
+          <a href="../">Home</a>
+          <a href="../about.html">About</a>
+          <a href="../archive.html">Archive</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="inner">
+        <div class="info">
+    Posted on July  2, 2017
+    
+    by <a href="../about">Dave Taylor</a>
+    
+</div>
+
+<h2 id="databases">Databases</h2>
+<p>Interactions with a database can be expressed clearly and succinctly in a functional paradigm. Developers coming to functional programing from an object oriented background, may feel like something is simply missing and search for an abstraction.</p>
+<p>The functional approach is to simply make a connection and start creating functions. A DSL combined with the expressive power of compound procedures — apply and piping — a programmer can express his interactions with the database. These expressions are often both readable and intuitive, to other developers.</p>
+<h3 id="the-object-oriented-approach">The Object Oriented Approach</h3>
+<p>Looking at some alternative Java approaches (which have been greatly simplified), we can begin to see the scaffolding needed to maintain these interactions. A side effect of these object oriented abstractions is code bloat. This implementation detail introduces the tendency to have the code drive the design of the database — often when not appropriate.</p>
+<h4 id="hibernate">Hibernate:</h4>
+<p>This <a href="http://docs.jboss.org/hibernate/orm/5.2/quickstart/html_single/">popular library</a> requires a programmer to create a class with meta data, before querying. Keeping this logic in sync with your database migrations is tedious.</p>
+<pre><code>@Entity
+@Table(name = &quot;BOOK&quot;)
+public class BOOK {
+
+  @Id
+  @Column(name = &quot;id&quot;)
+  private long id;
+
+  @Column(name = &quot;name&quot;)
+  private String name;
+
+  @Column(name = &quot;author&quot;)
+  private String author;</code></pre>
+<pre><code>Query query = session.createQuery(&quot;from BOOK&quot;);
+    List&lt;Car&gt; empList = query.list();</code></pre>
+<h4 id="jdbi">JDBI</h4>
+<p>The JDBI <a href="http://jdbi.org/sql_object_api_queries/">library</a> was designed to map queries to an interface. Like Hibernate, a developer needs to create a custom class implementing ResultSetMapper, mapping each element in a database to a class.</p>
+<pre><code>public interface Queries
+{
+  @SqlQuery(&quot;select name from BOOK where id = :id&quot;)
+  String findName(@Bind(&quot;id&quot;) int id);
+
+  @SqlQuery(&quot;select name from BOOK where id &gt; :from and id &lt; :to&quot;)
+  List&lt;String&gt; findNamesBetween(@Bind(&quot;from&quot;) int from, @Bind(&quot;to&quot;) int to);
+
+  @SqlQuery(&quot;select name from BOOK&quot;)
+  Iterator&lt;String&gt; findAllNames();
+}</code></pre>
+<h3 id="the-functional-approach">The Functional Approach</h3>
+<p>Looking at the Clojure approach with <a href="https://github.com/jkk/honeysql">HoneySQL</a>, the absence of code bloat from the OO paradigm is noticeable and the functions are readable. Moving the focus to functions and away from custom types introduces simplicity.</p>
+<pre><code>(-&gt; (select :*) (from :BOOKS) sql/format) 
+// [&quot;SELECT * FROM BOOKS&quot;]
+
+(def  (-&gt; (select :*) (from [:BOOKS :B]))))
+
+(defn books-query-by-author [author] (-&gt; books-query (merge-where  [:= :author author]) sql/format))
+
+(books-query-by-author &quot;Dave&quot;)
+// [&quot;SELECT * FROM BOOKS WHERE author = ?&quot; &quot;Dave&quot;]                
+
+(defn books-query-by-published-year [year] (-&gt; books-query (merge-where  [:= :year year]) sql/format))
+
+(books-query-by-published-year 1981)
+// [&quot;SELECT * FROM BOOKS WHERE year = ?&quot; 1981]
+     
+
+(defn books-query-by (comp books-query merge-where))</code></pre>
+<p>The functional approach to interacting with a database is through the application of common functional principles. Domain knowledge of a specific library is not needed, as the solutions are the <em>very</em> same solutions we use throughout the rest of our code base. The code is readable and expressive. The reduction in scaffolding eliminates complexity and potential bugs.</p>
+
+      </div>
+    </div>
+
+    <footer>
+      <div class="inner">
+        Site proudly generated by
+        <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+      </div>
+    </footer>
+    <script>
+      window.klipse_settings = {
+        // selector_eval_js: '.language-klipse', // css selector for the html elements you want to klipsify
+        selector: '.eval-clojure'
+      };
+    </script> 
+    <script src="https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"></script>
+  </body>
+</html>
